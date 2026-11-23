@@ -187,29 +187,89 @@ bodyWeight.value='';
 render();
 }
 
+
 async function searchFood(){
-let q=document.getElementById('search').value;
-if(!q)return;
-results.innerHTML='Searching...';
-try{
-let r=await fetch('https://world.openfoodfacts.org/cgi/search.pl?search_terms='+encodeURIComponent(q)+'&search_simple=1&action=process&json=1&page_size=5');
-let data=await r.json();
-results.innerHTML='';
-data.products.forEach(p=>{
-let n=p.nutriments||{};
-let name=p.product_name||'Unknown';
-let cal=n['energy-kcal_100g']||0;
-let protein=n.proteins_100g||0;
-let carbs=n.carbohydrates_100g||0;
-let fat=n.fat_100g||0;
-let b=document.createElement('button');
-b.textContent='Add '+name;
-b.onclick=()=>{foods.push({name,cal,protein,carbs,fat});localStorage.setItem('foods',JSON.stringify(foods));render();alert('Added per 100g')};
-results.appendChild(document.createElement('p')).textContent=name+' · '+cal+' kcal/100g';
-results.appendChild(b);
-});
-}catch(e){results.textContent='Search unavailable. Try again later.'}
+ const q=document.getElementById('search').value.trim();
+ if(!q)return;
+
+ const results=document.getElementById('results');
+ results.innerHTML='Searching...';
+
+ try{
+  const r=await fetch('https://world.openfoodfacts.org/cgi/search.pl?search_terms='+encodeURIComponent(q)+'&search_simple=1&action=process&json=1&page_size=8');
+  const data=await r.json();
+  results.innerHTML='';
+
+  data.products.forEach((p,i)=>{
+   const n=p.nutriments||{};
+   const name=p.product_name||'Unknown';
+   const cal=Number(n['energy-kcal_100g'])||0;
+   const protein=Number(n.proteins_100g)||0;
+   const carbs=Number(n.carbohydrates_100g)||0;
+   const fat=Number(n.fat_100g)||0;
+
+   const card=document.createElement('div');
+   card.className='entry';
+
+   const title=document.createElement('strong');
+   title.textContent=name;
+
+   const info=document.createElement('p');
+   info.textContent=cal+' kcal · P '+protein+'g · C '+carbs+'g · F '+fat+'g per 100g';
+
+   const amount=document.createElement('input');
+   amount.type='number';
+   amount.value='100';
+   amount.min='1';
+   amount.placeholder='Amount in grams';
+
+   const meal=document.createElement('select');
+   ['Breakfast','Lunch','Dinner','Snacks'].forEach(m=>{
+    const option=document.createElement('option');
+    option.value=m;
+    option.textContent=m;
+    meal.appendChild(option);
+   });
+
+   const add=document.createElement('button');
+   add.textContent='Add to diary';
+
+   add.onclick=()=>{
+    const grams=Number(amount.value);
+    if(!grams||grams<=0)return alert('Enter a valid portion size');
+
+    const factor=grams/100;
+
+    foods.push({
+     name:name+' ('+grams+'g)',
+     meal:meal.value,
+     date:todayKey(),
+     cal:Math.round(cal*factor),
+     protein:Math.round(protein*factor*10)/10,
+     carbs:Math.round(carbs*factor*10)/10,
+     fat:Math.round(fat*factor*10)/10
+    });
+
+    localStorage.setItem('foods',JSON.stringify(foods));
+    render();
+    alert('Food added!');
+    card.remove();
+   };
+
+   card.appendChild(title);
+   card.appendChild(info);
+   card.appendChild(amount);
+   card.appendChild(meal);
+   card.appendChild(add);
+   results.appendChild(card);
+  });
+
+  if(!data.products.length)results.textContent='No foods found. Try another search.';
+ }catch(e){
+  results.textContent='Search unavailable. Try again later.';
+ }
 }
+
 
 function render(){
  const todaysFoods=foods.filter(f=>f.date===todayKey());

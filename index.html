@@ -265,9 +265,10 @@ async function searchFood(){
   });
 
   if(!data.products.length)results.textContent='No foods found. Try another search.';
- }catch(e){
-  results.textContent='Search unavailable. Try again later.';
- }
+}catch(e){
+  console.error(e);
+  results.textContent='Search error: '+e.message;
+}
 }
 
 

@@ -76,7 +76,11 @@ select {
 <p><small>Choose a meal photo and enter its estimated nutrition below. Automatic AI analysis will be added in a later version.</small></p>
 <input type="file" accept="image/*" capture="environment">
 </div>
-<div class="card"><h3>Food search</h3>
+<div class="card">
+<h3>Today's food diary</h3>
+<div id="foodDiary">Nothing logged yet.</div>
+</div>
+  <div class="card"><h3>Food search</h3>
 <input id="search" placeholder="Search food database">
 <button onclick="searchFood()">Search</button>
 <div id="results"></div>
@@ -220,7 +224,16 @@ function render(){
  todayFood.innerHTML=todaysFoods.map(f=>
   '<div class="entry"><strong>'+f.meal+'</strong> · '+f.name+' · '+f.cal+' kcal</div>'
  ).join('')||'Nothing logged yet.';
+const meals=['Breakfast','Lunch','Dinner','Snacks'];
 
+document.getElementById('foodDiary').innerHTML=meals.map(meal=>{
+ const items=todaysFoods.filter(f=>f.meal===meal);
+
+ return '<h4>'+meal+'</h4>'+
+ (items.length
+  ? items.map(f=>'<div class="entry">'+f.name+' · '+f.cal+' kcal · Protein '+f.protein+'g · Carbs '+f.carbs+'g · Fat '+f.fat+'g</div>').join('')
+  : '<p><small>Nothing logged yet.</small></p>');
+}).join('');
  workoutHistory.innerHTML=workouts.slice().reverse().map(w=>'<div class="entry">'+w.date+' · '+w.type+' · '+w.exercise+' · '+w.sets+' × '+w.reps+' · '+w.weight+'kg</div>').join('');
 
  weightHistory.innerHTML=weights.slice().reverse().map(w=>'<div class="entry">'+w.date+' · '+w.weight+' kg</div>').join('');

@@ -46,6 +46,13 @@ input,select{width:100%;padding:12px;margin:6px 0 12px;background:#101512;color:
 <h2>Food diary</h2>
 <div class="card">
 <h3>Add food manually</h3>
+<select id="foodMeal">
+<option value="Breakfast">Breakfast</option>
+<option value="Lunch">Lunch</option>
+<option value="Dinner">Dinner</option>
+<option value="Snacks">Snacks</option>
+</select>
+
 <input id="foodName" placeholder="Food name">
 <input id="foodCal" type="number" placeholder="Calories">
 <input id="foodProtein" type="number" placeholder="Protein (g)">
@@ -101,7 +108,20 @@ input,select{width:100%;padding:12px;margin:6px 0 12px;background:#101512;color:
 </nav>
 
 <script>
+function todayKey(){
+ const d=new Date();
+ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+
 let foods=JSON.parse(localStorage.getItem('foods')||'[]');
+
+foods=foods.map(f=>({
+ ...f,
+ date:f.date||todayKey(),
+ meal:f.meal||'Other'
+}));
+
+localStorage.setItem('foods',JSON.stringify(foods));
 let workouts=JSON.parse(localStorage.getItem('workouts')||'[]');
 let weights=JSON.parse(localStorage.getItem('weights')||'[]');
 
@@ -111,12 +131,30 @@ document.getElementById(page).classList.add('active');
 }
 
 function addFood(){
-let name=document.getElementById('foodName').value;
-if(!name)return alert('Enter food name');
-foods.push({name,cal:+foodCal.value||0,protein:+foodProtein.value||0,carbs:+foodCarbs.value||0,fat:+foodFat.value||0});
-localStorage.setItem('foods',JSON.stringify(foods));
-foodName.value=foodCal.value=foodProtein.value=foodCarbs.value=foodFat.value='';
-render();
+ const name=document.getElementById('foodName').value.trim();
+ if(!name)return alert('Enter food name');
+
+ const meal=document.getElementById('foodMeal').value;
+
+ foods.push({
+  name:name,
+  meal:meal,
+  date:todayKey(),
+  cal:+document.getElementById('foodCal').value||0,
+  protein:+document.getElementById('foodProtein').value||0,
+  carbs:+document.getElementById('foodCarbs').value||0,
+  fat:+document.getElementById('foodFat').value||0
+ });
+
+ localStorage.setItem('foods',JSON.stringify(foods));
+
+ document.getElementById('foodName').value='';
+ document.getElementById('foodCal').value='';
+ document.getElementById('foodProtein').value='';
+ document.getElementById('foodCarbs').value='';
+ document.getElementById('foodFat').value='';
+
+ render();
 }
 
 function addWorkout(){
@@ -159,14 +197,22 @@ results.appendChild(b);
 }
 
 function render(){
-let total=k=>foods.reduce((s,f)=>s+(+f[k]||0),0);
-cal.textContent=Math.round(total('cal'));
-protein.textContent=Math.round(total('protein'))+'g';
-carbs.textContent=Math.round(total('carbs'))+'g';
-fat.textContent=Math.round(total('fat'))+'g';
-todayFood.innerHTML=foods.map(f=>'<div class="entry">'+f.name+' · '+f.cal+' kcal</div>').join('')||'Nothing logged yet.';
-workoutHistory.innerHTML=workouts.slice().reverse().map(w=>'<div class="entry">'+w.date+' · '+w.type+' · '+w.exercise+' · '+w.sets+' × '+w.reps+' · '+w.weight+'kg</div>').join('');
-weightHistory.innerHTML=weights.slice().reverse().map(w=>'<div class="entry">'+w.date+' · '+w.weight+' kg</div>').join('');
+ const todaysFoods=foods.filter(f=>f.date===todayKey());
+
+ let total=k=>todaysFoods.reduce((s,f)=>s+(+f[k]||0),0);
+
+ cal.textContent=Math.round(total('cal'));
+ protein.textContent=Math.round(total('protein'))+'g';
+ carbs.textContent=Math.round(total('carbs'))+'g';
+ fat.textContent=Math.round(total('fat'))+'g';
+
+ todayFood.innerHTML=todaysFoods.map(f=>
+  '<div class="entry"><strong>'+f.meal+'</strong> · '+f.name+' · '+f.cal+' kcal</div>'
+ ).join('')||'Nothing logged yet.';
+
+ workoutHistory.innerHTML=workouts.slice().reverse().map(w=>'<div class="entry">'+w.date+' · '+w.type+' · '+w.exercise+' · '+w.sets+' × '+w.reps+' · '+w.weight+'kg</div>').join('');
+
+ weightHistory.innerHTML=weights.slice().reverse().map(w=>'<div class="entry">'+w.date+' · '+w.weight+' kg</div>').join('');
 }
 render();
 </script>
